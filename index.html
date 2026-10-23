@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>모의 투자 게임</title>
+<style>
+:root{
+  --paper:#F1F6F0;
+  --grid:#D8E4DA;
+  --ink:#16213E;
+  --ink-2:#4B5568;
+  --rule:#C9D5CC;
+  --white:#FFFFFF;
+  --up:#D62839;
+  --down:#1D5FD1;
+  --mark:#FFE45C;
+  --font:"Pretendard Variable","Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--ink);font:16px/1.55 var(--font);
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px;
+}
+button,input,select{font:inherit;color:inherit}
+button{touch-action:manipulation}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 96px}
+.num{font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--ink-2)}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px;box-shadow:0 0 0 5px #fff}
+
+/* 버튼 */
+.btn{min-height:44px;padding:8px 18px;border:2px solid var(--ink);border-radius:6px;background:#fff;font-weight:700;cursor:pointer;line-height:1.2}
+.btn:hover:not(:disabled){background:#EEF3EE}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.buy{background:var(--up);border-color:var(--up);color:#fff}
+.btn.buy:hover:not(:disabled){background:#B81F2F}
+.btn.sell{background:var(--down);border-color:var(--down);color:#fff}
+.btn.sell:hover:not(:disabled){background:#174DAA}
+.btn.main{background:var(--ink);color:#fff;padding:10px 24px}
+.btn.main:hover:not(:disabled){background:#0C1530}
+.btn.small{min-height:36px;padding:4px 12px;font-size:14px}
+.link{background:none;border:0;padding:4px 2px;color:var(--ink-2);text-decoration:underline;cursor:pointer;font-size:14px}
+
+/* 시작 화면 */
+.start{max-width:560px;margin:6vh auto 0;background:#fff;border:2px solid var(--ink);border-top:6px double var(--ink);padding:28px 26px 26px}
+.start h1{margin:0 0 4px;font-size:30px;letter-spacing:-.02em}
+.start h1 mark{background:linear-gradient(transparent 58%,var(--mark) 58%);color:inherit}
+.start .sub{margin:0 0 22px;color:var(--ink-2)}
+.field{display:block;margin-bottom:18px}
+.field>span,.fieldset legend{display:block;font-weight:700;margin-bottom:6px;padding:0}
+.field input[type=text]{width:100%;min-height:48px;padding:8px 12px;border:2px solid var(--ink);border-radius:6px;background:#fff;font-size:18px}
+.fieldset{border:0;margin:0 0 20px;padding:0}
+.segs{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.segs.two{grid-template-columns:repeat(2,1fr)}
+.fhint{margin:-10px 0 16px;font-size:14px;color:var(--ink-2);min-height:0}
+.fhint:empty{display:none}
+.segs label{position:relative}
+.segs input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.segs span{display:block;text-align:center;padding:10px 0;border:2px solid var(--ink);border-radius:6px;font-weight:700;background:#fff}
+.segs input:checked+span{background:var(--ink);color:#fff}
+.segs input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px;box-shadow:0 0 0 5px #fff}
+.rules{margin:22px 0 0;padding:14px 16px;background:#F6F9F5;border-left:4px solid var(--ink);font-size:15px}
+.rules ul{margin:6px 0 0;padding-left:18px}
+.saves{margin-top:22px;border-top:1px solid var(--rule);padding-top:14px}
+.saves h2{font-size:15px;margin:0 0 8px}
+.saves ul{list-style:none;margin:0;padding:0}
+.saves li{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--rule)}
+.err{color:#B3202F;font-weight:700;margin:8px 0 0;min-height:1.4em}
+
+/* 머리글 */
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.who{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.who .name{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.who .grp{background:var(--ink);color:#fff;border-radius:5px;padding:2px 10px;font-weight:700}
+.tape{display:flex;gap:6px;list-style:none;padding:0;margin:0;flex-wrap:wrap}
+.tape li{border:2px solid var(--ink);border-radius:6px;padding:3px 10px;font-weight:700;font-size:14px;background:#fff;min-width:72px;text-align:center;line-height:1.3}
+.tape li small{display:block;font-weight:500;font-size:12px}
+.tape .done{background:var(--ink);color:#fff}
+.tape .now{background:var(--mark)}
+.tape .todo{border-style:dashed;color:var(--ink-2);background:transparent}
+
+.board{display:flex;flex-wrap:wrap;gap:10px 30px;align-items:flex-end;background:#fff;border:2px solid var(--ink);padding:14px 18px;margin-bottom:16px}
+.board .label{font-size:14px;color:var(--ink-2);font-weight:600}
+.total-num{font-size:clamp(38px,8vw,60px);font-weight:800;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums}
+.total-num mark{background:linear-gradient(transparent 58%,var(--mark) 58%);color:inherit;padding:0 .08em}
+.total-num small{font-size:.4em;font-weight:700;margin-left:6px;letter-spacing:0}
+.stats{display:flex;gap:10px 22px;flex-wrap:wrap}
+.cum{font-size:14px;color:var(--ink-2);font-weight:600;margin-top:2px}
+.cum b{font-size:16px}
+.stat b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
+
+.tabs{display:flex;gap:4px;margin-bottom:0}
+.tab{border:2px solid var(--ink);border-bottom:0;background:transparent;padding:9px 22px;font-weight:700;cursor:pointer;border-radius:6px 6px 0 0;min-height:44px}
+.tab[aria-selected=true]{background:#fff}
+.tab:disabled{opacity:.45;cursor:not-allowed;border-style:dashed}
+.sheet{background:#fff;border:2px solid var(--ink);padding:18px 18px 22px}
+.sheet h2{margin:0 0 4px;font-size:21px;letter-spacing:-.01em}
+.sheet .lead{margin:0 0 14px;color:var(--ink-2);font-size:15px}
+
+/* 장부(거래) */
+.ledger{border-top:4px double var(--ink);border-bottom:2px solid var(--ink);border-left:3px solid rgba(214,40,57,.35)}
+@media (min-width:1021px){.lrow .cellp{white-space:nowrap}}
+.lrow{display:grid;grid-template-columns:minmax(130px,1fr) 108px 84px 56px 108px minmax(380px,3fr);gap:8px 12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--rule)}
+.lrow:last-child{border-bottom:0}
+.lhead{background:#EAF0EB;font-weight:700;font-size:14px;padding-top:8px;padding-bottom:8px}
+.sname{font-weight:800;font-size:17px}
+.smeta{font-size:13px;color:var(--ink-2)}
+.smeta span+span{margin-left:8px}
+.price b{font-size:18px}
+.price .chg{display:block;font-size:13px;font-weight:700}
+.spark{display:block;margin-top:2px}
+.trade{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.qty{display:inline-flex;border:2px solid var(--ink);border-radius:6px;overflow:hidden}
+.qty button{width:36px;min-height:40px;border:0;background:#EEF3EE;font-size:18px;font-weight:700;cursor:pointer}
+.qty button:hover{background:#DDE7DF}
+.qty input{width:56px;border:0;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:center;font-weight:700;font-size:17px;background:#fff}
+.chip{border:1.5px solid var(--ink);background:#fff;border-radius:999px;min-height:32px;padding:0 10px;font-size:13px;font-weight:700;cursor:pointer}
+.est{flex:1 1 120px;font-size:13px;color:var(--ink-2);min-height:1.2em}
+.brk{flex-basis:100%;height:0}
+.chips{display:contents}
+.btn.sell.all{background:#fff;color:var(--down)}
+.btn.sell.all:hover:not(:disabled){background:#EAF0FB}
+.cellp::before{display:none;content:attr(data-l);font-size:12px;color:var(--ink-2);font-weight:600;margin-right:6px}
+
+.panel2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:18px}
+.box{border:2px solid var(--ink);padding:14px 16px;background:#fff}
+.box h3{margin:0 0 4px;font-size:17px}
+.box p{margin:0 0 10px;font-size:14px;color:var(--ink-2)}
+.closebox{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.closebox input::placeholder{font-size:15px;letter-spacing:0;font-weight:600}
+.closebox input{width:170px;min-height:48px;border:2px solid var(--ink);border-radius:6px;padding:6px 12px;font-size:22px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;text-align:center;background:#fff}
+.log summary{cursor:pointer;font-weight:700;font-size:14px}
+.log ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+
+.mini{display:none;position:fixed;top:0;left:0;right:0;z-index:20;background:var(--ink);color:#fff;padding:8px max(14px,env(safe-area-inset-left));justify-content:space-between;align-items:center;gap:12px;font-weight:600;font-size:15px}
+.mini.show{display:flex}
+.mini.low{background:var(--up)}
+.mini b{font-size:20px;font-variant-numeric:tabular-nums}
+.clockbox{margin-left:auto;min-width:150px;text-align:right}
+.clock{font-size:clamp(34px,6vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.bar{height:9px;border:2px solid var(--ink);border-radius:5px;background:#fff;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:100%;background:var(--ink)}
+.clockbox.low .clock{color:var(--up)}
+.clockbox.low .bar i{background:var(--up)}
+.clockbox.over .clock{color:var(--ink-2)}
+.startbox{margin:0 0 16px;background:var(--mark)}
+.startbox p{color:var(--ink)}
+/* 구역 제목 · 채권 · 예금·적금 */
+h3.sec small{font-size:14px;font-weight:600;color:var(--ink-2);margin-left:6px}
+.secd{margin:0 0 8px;font-size:14px;color:var(--ink-2)}
+.ledger.bonds{border-left-color:rgba(29,95,209,.35)}
+.rating{display:inline-block;border:1.5px solid var(--ink);border-radius:4px;padding:0 6px;font-weight:800;font-size:12px;color:var(--ink);background:#fff;line-height:1.5}
+.bnote{grid-column:1/-1;margin:0;font-size:13px;color:var(--ink-2);line-height:1.5}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dcard{border:2px solid var(--ink);border-left:6px solid #1B7F4B;padding:14px 16px;background:#fff}
+.dcard h4{margin:0 0 4px;font-size:18px}
+.dcard h4 small{font-size:13px;font-weight:600;color:var(--ink-2);margin-left:4px}
+.drate{margin:0 0 8px;font-size:15px}
+.drate b{font-size:19px;color:#1B7F4B}
+.dnow{margin:0 0 10px;font-size:14px}
+.muted{color:var(--ink-2)}
+.dsub{margin:10px 0 0;font-size:13px;color:var(--ink-2)}
+.dcard .warn{margin:0 0 10px}
+.unit{font-weight:700;font-size:14px}
+.finres{margin:6px 0 0;padding-left:20px;font-size:15px}
+.finres li{margin:4px 0}
+/* 결과 */
+.ychips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.ychips button{border:2px solid var(--ink);background:#fff;border-radius:6px;min-height:40px;padding:0 14px;font-weight:700;cursor:pointer}
+.ychips button[aria-pressed=true]{background:var(--ink);color:#fff}
+.sumrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.sumrow div{border:2px solid var(--ink);padding:10px 14px;background:#fff}
+.sumrow .k{display:block;font-size:13px;color:var(--ink-2);font-weight:600}
+.sumrow .v{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.sumrow .big{background:var(--mark);border-color:var(--ink)}
+.rrow{display:grid;grid-template-columns:minmax(130px,1.3fr) 90px 90px 90px 70px 110px 90px;gap:6px 12px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--rule)}
+.rrow:last-child{border-bottom:0}
+.rrow.off{color:var(--ink-2)}
+.rrow .r{text-align:right}
+.rhead{background:#EAF0EB;font-weight:700;font-size:14px}
+.events{list-style:none;margin:8px 0 0;padding:0}
+.events li{padding:10px 0;border-bottom:1px solid var(--rule)}
+.tag{display:inline-block;font-size:13px;font-weight:700;border:1.5px solid var(--ink);border-radius:999px;padding:0 9px;margin-right:6px;background:#fff}
+.pill{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:1px 7px;margin:3px 6px 0 0;border:1.5px solid currentColor}
+.mine{margin-left:6px;font-size:12px;font-weight:700;background:var(--mark);padding:0 6px;border-radius:3px}
+h3.sec{font-size:18px;margin:22px 0 6px}
+.chart{width:100%;height:auto;max-width:680px;display:block}
+.cmp{width:100%;max-width:680px;border-collapse:collapse}
+.cmp td,.cmp th{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:left}
+.cmp td:last-child,.cmp th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.cmp .me td{background:var(--mark);font-weight:800}
+.reflect{margin:6px 0 0;padding-left:20px}
+.note{margin:12px 0 0;padding:10px 14px;border-left:4px solid var(--ink);background:#F6F9F5;font-size:14px}
+.warn{margin:0 0 14px;padding:10px 14px;border:2px solid #B3202F;background:#FDEBEC;font-weight:700;font-size:14px}
+
+/* 알림과 확인 */
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-weight:600;max-width:92vw;opacity:0;pointer-events:none;transition:opacity .18s;z-index:30;font-size:15px}
+#toast.on{opacity:1}
+.veil{position:fixed;inset:0;background:rgba(22,33,62,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40}
+.modal{background:#fff;border:2px solid var(--ink);border-top:6px double var(--ink);max-width:440px;width:100%;padding:20px 20px 16px}
+.modal p{margin:0 0 16px;font-size:17px;font-weight:600}
+.modal .acts{display:flex;gap:8px;justify-content:flex-end}
+
+@media (max-width:1020px){
+  .dgrid{grid-template-columns:1fr}
+  .lhead,.rhead{display:none}
+  .lrow{grid-template-columns:1fr 1fr 1fr;padding:12px 10px}
+  .lrow>.c-name{grid-column:1/3}
+  .lrow>.price{grid-column:3;text-align:right}
+  .lrow>.c-trade{grid-column:1/-1}
+  .price .spark{margin-left:auto}
+  #toast{bottom:auto;top:58px}
+  .cellp::before{display:inline}
+  .rrow{grid-template-columns:1fr 1fr;padding:12px 10px}
+  .rrow>.c-name{grid-column:1/-1}
+  .rrow .r{text-align:left}
+  .panel2{grid-template-columns:1fr}
+  .tab{padding:9px 16px}
+}
+@media (max-width:520px){
+  .lrow{grid-template-columns:auto 1fr auto;gap:8px 8px}
+  .lrow>.cellp:not(.price){font-size:14px;white-space:nowrap}
+  .lrow>.cellp:not(.price)::before{font-size:11px;margin-right:4px}
+  .lrow>.cellp:nth-of-type(4){justify-self:center}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;width:100%}
+  .trade .chips{display:flex;flex-basis:100%;gap:6px}
+  .trade .chip{min-height:34px;padding:0 9px}
+  .trade .btn{padding:8px 12px;min-width:60px}
+  .wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===== 게임 데이터 (정답 주가와 사건은 암호화되어 있어요) ===== */
+const STOCKS = [{"n": "A IT", "s": "IT", "p": 400, "d": 0, "k": "s"}, {"n": "B 엔터", "s": "엔터", "p": 180, "d": 0, "k": "s"}, {"n": "C 화학", "s": "화학", "p": 260, "d": 11, "k": "s"}, {"n": "D 전자", "s": "전자", "p": 480, "d": 10, "k": "s"}, {"n": "E 식품", "s": "식품", "p": 520, "d": 21, "k": "s"}, {"n": "F 바이오", "s": "바이오", "p": 320, "d": 0, "k": "s"}, {"n": "G 자동차", "s": "자동차", "p": 420, "d": 11, "k": "s"}, {"n": "H 건설", "s": "건설", "p": 240, "d": 10, "k": "s"}, {"n": "국채", "s": "발행: 대한민국 정부", "p": 100, "d": 3, "k": "b", "desc": "나라(정부)가 도로·복지 같은 나라 살림에 필요한 돈을 빌리려고 발행해요. 세금으로 갚기 때문에 돈을 못 돌려받을 걱정이 가장 적은 대신, 이자가 가장 적어요.", "rt": ["AAA", "AAA", "AAA", "AAA", "AAA"], "rw": {"AAA": "최고", "AA": "매우 높음", "BBB+": "보통", "BBB": "보통보다 낮음"}}, {"n": "지방채", "s": "발행: 한빛시", "p": 100, "d": 4, "k": "b", "desc": "한빛시(지방자치단체)가 지하철·도로 같은 지역 사업에 쓸 돈을 빌리려고 발행해요. 시의 세금으로 갚아요. 국채보다 조금 덜 안전한 대신 이자가 조금 더 많아요.", "rt": ["AA", "AA", "AA", "AA", "AA"], "rw": {"AAA": "최고", "AA": "매우 높음", "BBB+": "보통", "BBB": "보통보다 낮음"}}, {"n": "회사채", "s": "발행: H 건설", "p": 100, "d": 6, "k": "b", "desc": "H 건설(게임 속 건설 회사)이 공사 자금을 빌리려고 발행해요. 회사가 번 돈으로 갚기 때문에 회사 형편이 나빠지면 위험해져요. 그래서 이자가 가장 많아요.", "rt": ["BBB+", "BBB+", "BBB", "BBB+", "BBB+"], "rw": {"AAA": "최고", "AA": "매우 높음", "BBB+": "보통", "BBB": "보통보다 낮음"}}];
+const PACKS  = {"1": {"s": "F6T2PJEAVIHyYKJIuEAsKQ==", "i": "iVPJkcmbpHwrjI53", "c": "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"}, "2": {"s": "6mAOV89gSpNEh8oxc016CA==", "i": "JCbxeCrD5EzSxs5X", "c": "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"}, "3": {"s": "QeWtqpAyu0V9+95waGOpTg==", "i": "kbv6F+BwkNcXntD0", "c": "gEt5IqwGdzcfjxpQ8CSjK9/EL1979HnrmFm3ZKQSBH3CA6RrpMfHA0nWp1RIG3KtFr7sHqM2JZzSY289Aua+1emYas/7/LEnL4orpKAnnRjoMRq+GXcLd0aNtcte/AgEcwOUGLW34tNXpSzo2nX7jwB3uq3P3boou6pCWYf2TCsk7AZzqfH/89cxkqywaiW7Rycljd8hBMKDJR/FJ80Jjkc9a7TGeiAa4Ad9u4xsB7OklCnJ9D7Eu1brWoda2osfDq6LtoPT8YaaoT4NZHb1heAPovu5F6x6oT6UBXNOouon6zzrN1FCKbnP29foYtxCHPPPDcGy++dUDTe9H+hsbS3vBhB3XGMbUq+PO3c7OG40E3KI3P5NMELfunr/wECDfB02MYHOtEEhahJvGmESGo0OKmRzK0cj7jGMlDOOrk1m7+0VIRB0G5nyIpKztPqoFn0gRMDbDjbhMg5aluuav48yU8/7PJNhX07+pU/uxwS5Npibs9KiMYx1uVbfM9uNEdk0eLp4KwL5c4DOklYf3qmaIzQP/t+ugXBFdcFxI/EjHXO+4A+zEMfGHerzGmOjqH7cDjCQJBqZbidF6imawOrXM6BQJBVDyko0pgX4OEpYxjiNzCSWN1E603tn4488p3Du6ouvVRYG9tQWx23TBAWGbOIg9HKZh03CV4E0E4wf7G/8YRZ130lUVe4SpCiZdL85XuP6HpOgxt8qtUyriALqUapxBhXXh5MZAbZwpWQwnx626BQdTLbVGwPJd0pP4BRhGFdCBrQ5qnXKqPZeP/G4Ju0kxl51nvZEYfgL1jQbFO3TaRukxy34NDTdgTHIY5xf0yQa+yqk6cWC51jV+YtGqYzKgOpOjJtRqoSbLDDAenloUj1eEUpDVeYr48wHce5wt8WkBkGAGUnIQkOEcliEvoDfJJ4+UaYzv2AFeS4m1x81uzC1Ce2/NMMJSJ8b8mmsb3nfSQlmPuPlstPHJYVvsa/8FbNrgEgMQL8pq6dMIDU0tx3btbdVnasRjy4QyzcBs4Ffl/ILqWE8VXlRm+/T2TAoPex4lf28cldgHs0tWQx/evPwxJVqfLdwUJa5yFLd2aQuJVB9COynhi3s388onxCENcYw8Z/jBlpG13+lBfbN+5IM0Rrb/GdvTAHjLGkXUspN2fjFM2lDIU7MCzekZC9P73LHcqXP2I8bUCsbYpDv79ShMmfcPOa1l48alt1kDRicWZq1pwmq1zAgRRQC9m90hpb1tuveVEC7IScuwZGGIEGTIrExRClibxeT3CSWp94jk56UUMzmAF9pUpfSap9pRbQh1+pqSKGn6TPeFnYBE/e61kY5DDoO8SSSHIKjOQMsORzlLnV2P7XvX6j8rO6F0vX2Iqj0vbC2/j4zVrmnMNJAFZmdsLkZnmS1mDK7joeG9JSeWOM/crJffRiR45e27w3zjnPmldu0rJT32NecrNuiqVZNIvOKKJCnqk5uzgTmh8bT4A7MnQ1FLGsGDFbk5Id3EwWVMeztE6Rictxf9fdMiZRdKu1zdIHXQWgMl/HBFKBc/8zaZU1ewnwZYvPOchOlmodLTCy9Fj5mwbYI7DNj3V+hpck5xpxbokJiM1dd/RtEi+pCzzQ4BoKG4P6hWTt2c5Xs6tPH/pBDYOiIsmc/L7k6uJhxd7qxGBQYCCZwtkXbNiC5Dmy0rrLVnPMZDu1kvNnqWNc+bpumpxOjogduIMaO7Xl2MaR1oM6UUO1U9D0HCGL3kKajwcDLxujGKO7ExD8xQfJXroupW+A1ODKA7eoCkrYdUQV/5INNNcCJ+lI1cnUEjhdqZSRODXESUj3bNRb8xZ24CeHEazl8rEWpuzyZDTvsnLI6ISv7n174QVPI/3UenV+Wk6W9"}, "4": {"s": "Js0u0PLJZDOCWyo9z71u4w==", "i": "vR4i/vn7keXChI0X", "c": "0SqpKZiFaQ+7D2hIVaWkC7MlAZ0jh6JwBK56fzSzE+yDlbKOcay5PItFhMnE9hs7LvZnrPiLudWTVUs3q3t7jwK2E2f2hPkJyQocJPKf80MNWNy2MeBC45JVX4uZ1l/HqiEgjGiNv32huQdyJvXb2S1BDMQAzxiBuNw3aC5XBPB3gscXWqYf0SNtzdJa7oc+TGfpK1MKF//+TqvrP6e4smq4vRRe9C+OFaR08OHMSImg2bx1Ibv7ypJfWsQUPMULBxIpkFGb232oxw5edFkMjCtjuL7tuBdwVOid8JVWIl1+CYBrkwFY+AqZHufXpaeWfHoCsKNADSjmoLCpQYVu7XQmbdXBHG1O0jMDl/ecbfSnF5Nl6Bse+jqv/DSSbdY9ZeSVsUBTOT6Jw37Aaoiw5bOrGOAepmKoJ6E4sbz57PKAENnlsrsPTzzKMwr+NUD6y4jEoMEI5nMtsMXqyIJldAnjLv2+iUXebnJ6DvQgqLgQU1OcM1k/vZsb0R4foVNyOzWbGG8Qy2x7EytcLcRemvZXajvzLRhTgT6Ty93/0XGDsdfzbCOjOmBlKeyytTXFGL8OmcL/rPBnFEtCIvj1qWmXjfSfQjBLgPGxq6t6D8pY30poK7x8W1azRaysvE4wPm2nxmnw+BWTxugRb6yY5RZDRHoEBU2PK0xhoqstXyJP0MTMPMoqo7cs0EzxaR1Yye0951fdH51lqI0S2qt9/YUOE5wqLXeY5rtZMHSr4H4ZUvglUEEGAxa+sXBJ2B6EYRb7y6Jr0aMP5KEl3Agd07jnvQomBP8/glGsTBBGtReAyAvWxZdKDQpWfCi0eZ0mKQVE5ajGwX/FxQU7yjSEgw3jPQL/RbqWyj1hucqx81zvUB5ZDFBDHz2hsUumwG18nkPQeDHJaIHkWrx+sfWx3WaJ+xU8JrHqgviLwJCWIVcAdMculIPSwUm7OM9gWEobZEUKl1I+FsWn2YzVZkouYPYrtGEH39wCDT0EzBfIas3BlqYjNWgUqMO/jQN/ClD2HqhfgxKboH3omCY9CBz2MGh7ceJaHLXZS5LnTGkq52U24EIyDyjYW3YajNmqqv0y1vKEi2tWXpOQirdfemAtDia1xgGc3j0dhWuiGGLoU8q+22yfIPEF6PmVbl1ZZ+pjtgHSCxcop3bBxtvCEjtyUE7ExTSyzc60LWhYVVfqvQqsVXOC9/1Jo3PUOFd0eDgcMptyeH+VLC7B8sReuAaWEchgY2o9nlE+yXzNgV5ccSTZpCP+xI7bjt34qDS1Uns6aPyxYKDVVPiRj88UO/vHmRFxBeGCe/u8KUyxJfnmNYYpxEHvsDDDwc4tdjMQpOyGGqwmLbZvlHq01TNM5lpO7jcPJFZL3T3eGF30ESa2frJSfwh5tI0yzve/g9g0yVHeVo7AYkFGbhH9+0TMaLT/0Fa3/z5wuYYV5eSHb7LjnWoFMYJ2l9lFTv9RW7y790lF6CAU1bi1rhCI1E4F9rzenwGdM8pfPrsxK7VdeSaUKR/gwtl1alMPVOc8yAQ629nFQ642j7TY2vgHLGGZ3ls+EmSRzsEP4Oizp9XHCDaP5soEQ5LZhGlXA1lXiOBtJmsO8isQwtXOAgCN/auFqT4PRlfGylIJGHGFfUvNHBObwOlN0R9eK/xL0eeAsiRy9ufq5u0mUbqqfKXLreRjNZuXuZE="}, "5": {"s": "i42nQUzg0wi5B6PnBCAPbQ==", "i": "kx5ONo5NpF1al5un", "c": "oDg5642gyA6t63W9/iIpl+poshjDY5qZdrHAGASpcVrIXxEERDh6aLjQnRqpKeZPiGgOnjoynZ/vKrGZqNqSYMk+VajPyNXSRyRkHd+/gMXfSAz3Kn0NLCLELWPIIptxRyLusWsQrXeMq7EIx+co5ZMBWvoAhPy1jRk1lyMN0jY3add15pWH9Y9qSFWi1D6u9ODFdsy/dqsbQ3o2Jj91Oqnag+MUEZjmcUMuHuUP8q2nvYVxDjTdTqW/CyGRvynqOe2hSj+wGyzvph6c3qAT5w01S3LzCUdjFjIlZus/t+JwwlDks4/GCpXk29dNtC7ihGBCwwlBQYPG1Z4tcPAsqdQ0g1roJyvYDBMv8alL5Fhq5D4T+uzANAbkWDrqVbrLpqPZCpY7xJUKiaV85JUFQBFfJpcAcVuETNQ81gKyHnHq83qI2leNv7yIZYd0ygwy4d/7Pq9am2I1QoM5rdbozfMMT0V/99aQoLKYN4v2eX0ZXnG1uRcr3bIbKsR/GaulsKlAtzYxFgdQepCfAqbFDHIKxywc3FaHWCYtOiutV1dZdZWoG9apyOaD8X91gXMZoWZXupdFTD4g24Dva4JydGzLvTFNs8yBuP8WTkcoxRpRA0GKz3FA2wt1h98HFhV/Cm7nvBEYn9B9UAky06VMMbV4PN8SN3LAn9NbA4Ggr19+2TK6gkzj11vAF0gKzvUShI/jtZA61pFeIjJkq5A61OjRFpkLQZ1zUCmDOceM2wG0SeCv70Txuzqd+Hs+kZtYorj/Swh7E+OEJpRIxmAmUmxtooKGYS7WErxZSTxDtfK0hjFfE4kzT22Rt3WYqG0ZcT7DQClLbbVsP+yBD/8hjm0eS7PlHlWfj+vBJILY5qwJHfT7NtKqlRKWwWVA/k0ag+W9ChzzRP0wElrJHfuzGZYhj2WQgQLwQuDn5nHQ6SAAFP6R4xhl+YBvr2a+GB6YXrPlqtWm8uA+v1NPHRJx5fIyQQvmK4Dik8/WoxEWVZvrbpMwkdBbIvyqLWDbVWlNQcAAS7jEiAe6/b5RCur88VVxcDJqsuke428XhU/xq2wjgyZtnKofR9q2O0a1/f8wFIzDJIaYNrqkiqjWyRZ2zAHVjUkc2DR3adk+3qTwVTc4MacZPuFo4ZXVcj85HLdk7oFImoHhMEQsE8w7/gPvdPHm3gUbqmW+O1zCQnunoPQP9vc0I2gCBtAjbuAXwdmwqoK5MiVGbxma6jqiB8/nF9IPDdmyH/V+XuceZNyxTxkeXFLR62Dr9o4rpKm7uzD0EoJfdjarvDlV0pl8S7jLxJ/Do0NVQIzWbOtsOTLqRRYB11FUpXxrje+lw9jx+8YBiP+NUGA711Nrsk2xV+ZQDpH3s6jzNAXZIrocUy9ZHq5k8IHhCESyZJ0qJ0P3R0YXopFqRdeZ2Au/XvQhTpO3WU1PAV7vF2WaZ4A4thU3im+0HEL4ZPuFIOyCPZyI9fUUl9USCqlszWwJs07bSXV8XBHCHczMIiIfHqOUtlIxNTD2ZBDmhPdAVqgLbZy1iH5jC8HuoDtzSzofq1nU9p8nke9sroVVNhAdGTcGAA/k3UalQ2VRgNnoH3E04P02hM/uX/Gg/P+/FaWc"}};
+const FIN    = {"dep": [250, 200, 200, 200, 300], "sav": [350, 300, 300, 300, null], "term": 2};   // 예금·적금 이자율(연, 0.01% 단위)과 적금 만기(년)
+const SIG_SALT = "222040ee90219353";
+const YEARS = 5;
+const START_CASH = 10000;      // 100만 원 (내부 단위: 100 = 1만 원, 화면에는 원 단위로 표시)
+const YEAR_SECONDS = 360;      // 한 해 제한 시간 (6분)
+const KEY_PREFIX = "invgame4b|";
+
+/* ===== 도우미 ===== */
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* 금액 표시: 내부 값 100 = 1만 원 → 원 단위로 바꿔 쉼표를 찍어요 */
+const comma = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const fmtN = c => comma(Math.abs(Math.round(c)) * 100);
+const fmt = c => (c < 0 ? '−' : '') + fmtN(c) + '원';
+const fmtS = c => (c > 0 ? '+' : c < 0 ? '−' : '') + fmtN(c) + '원';
+const fmtM = c => (Math.round(c / 10) / 10) + '만';    // 그래프용: 124.3만
+const pct = r => (r > 0.00005 ? '+' : r < -0.00005 ? '−' : '') + Math.abs(r * 100).toFixed(1) + '%';
+const dir = r => (r > 0.00005 ? 'up' : r < -0.00005 ? 'down' : 'flat');
+const arrow = r => (r > 0.00005 ? '▲' : r < -0.00005 ? '▼' : '–');
+const isBond = i => STOCKS[i].k === 'b';
+const UNIT = i => isBond(i) ? '좌' : '주';
+const STEPS = i => isBond(i) ? [10, 50] : [5, 10];
+const rateTxt = bp => '연 ' + (bp / 100).toFixed(1) + '%';
+const interest = (amt, bp) => Math.round(amt * bp / 10000);      // 원금 × 이자율 (100원 단위 반올림)
+const manwon = c => comma(Math.round(c / 100)) + '만 원';
+function hash53(str, seed){
+  seed = seed || 0;
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0, ch; i < str.length; i++){
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+/* ===== 저장소 (저장이 막힌 브라우저에서도 동작) ===== */
+const mem = {};
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return k in mem ? mem[k] : null; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e){ mem[k] = v; ui.noStore = true; } },
+  del(k){ try { localStorage.removeItem(k); } catch(e){ delete mem[k]; } },
+  keys(){ try { return Object.keys(localStorage); } catch(e){ return Object.keys(mem); } }
+};
+const MODE_LABEL = { team:'모둠', solo:'개인' };
+/* 모둠은 이름 순서가 달라도 같은 기록으로 취급 */
+const keyOf = (m, n) => KEY_PREFIX + m + "|" + n.split(', ').map(x => x.toLowerCase()).sort().join(',');
+
+/* 이름 칸 해석: 개인은 한 명, 모둠은 모둠원 전체(쉼표·띄어쓰기로 구분) */
+function parseNames(mode, raw){
+  const clean = String(raw || '').replace(/[|]/g, ' ');
+  if (mode === 'solo'){
+    if (/[,，、\/]/.test(clean)) return { err:'개인은 본인 이름만 쓰세요. 모둠으로 하려면 위에서 "모둠"을 고르세요.' };
+    const nm = clean.trim().replace(/\s+/g, ' ');
+    if (!nm) return { err:'이름을 입력하세요.' };
+    if (nm.length > 10) return { err:'이름은 10글자 이내로 써 주세요.' };
+    return { list:[nm], name:nm };
+  }
+  const seen = new Set(), list = [];
+  clean.split(/[,，、\/\n]+|\s+/).map(x => x.trim()).filter(Boolean).forEach(x => { const k = x.toLowerCase(); if (!seen.has(k)){ seen.add(k); list.push(x); } });
+  if (list.length < 2) return { err:'모둠원 이름을 모두 쓰세요. (2명 이상, 쉼표로 구분) 혼자 하는 경우에는 "개인"을 고르세요.' };
+  if (list.length > 10) return { err:'모둠원은 10명까지 쓸 수 있어요.' };
+  if (list.some(x => x.length > 10)) return { err:'이름은 10글자 이내로 써 주세요.' };
+  return { list, name:list.join(', ') };
+}
+function startTexts(mode){
+  return mode === 'team'
+    ? { label:'모둠원 이름', ph:'예: 홍길동, 김철수, 이영희', hint:'모둠원 전체 이름을 쉼표(,)로 구분해서 쓰세요.' }
+    : mode === 'solo'
+    ? { label:'이름', ph:'본인 이름을 입력하세요', hint:'' }
+    : { label:'이름', ph:'모둠이면 모둠원 전체, 개인이면 본인 이름', hint:'' };
+}
+
+/* ===== 상태 ===== */
+let S = null;
+const ui = { tab:'trade', qty:{}, amt:{}, resultYear:null, reveal:null, err:'', focus:null, noStore:false, busy:false, startName:'', startMode:'', warned:0 };
+
+function sigOf(s){
+  return hash53(JSON.stringify([s.mode, s.name, s.year, s.stage, s.cash, s.hold, s.dep, s.sav, s.t0, s.closed.map(c => [c.y, c.total, c.end])]) + SIG_SALT);
+}
+function persist(){
+  S.sig = sigOf(S);
+  store.set(keyOf(S.mode, S.name), JSON.stringify(S));
+}
+function loadGame(m, n){
+  const raw = store.get(keyOf(m, n));
+  if (!raw) return null;
+  try {
+    const s = JSON.parse(raw);
+    if (!s || s.v !== 4 || !Array.isArray(s.hold) || !Array.isArray(s.closed)) return null;
+    if (s.sig !== sigOf(s)) s.flagged = true;
+    return s;
+  } catch(e){ return null; }
+}
+function newGame(m, n){
+  return { v:4, name:n, mode:m, year:1, stage:'ready', t0:0, cash:START_CASH, hold:STOCKS.map(() => 0), dep:null, sav:null, notes:{}, trades:{}, closed:[], flagged:false, sig:'' };
+}
+function listSaves(){
+  const out = [];
+  store.keys().forEach(k => {
+    if (k.indexOf(KEY_PREFIX) !== 0) return;
+    try {
+      const s = JSON.parse(store.get(k));
+      if (s && s.name) out.push({ key:k, name:s.name, mode:s.mode, done:s.closed.length, stage:s.stage });
+    } catch(e){}
+  });
+  return out.sort((a, b) => (a.mode === b.mode ? 0 : a.mode === 'team' ? -1 : 1) || a.name.localeCompare(b.name, 'ko'));
+}
+
+/* ===== 계산 ===== */
+function startPrices(y){ return y === 1 ? STOCKS.map(s => s.p) : S.closed[y - 2].end; }
+function holdValue(prices, kind){ return S.hold.reduce((a, q, i) => a + ((STOCKS[i].k === 'b') === (kind === 'b') ? q * prices[i] : 0), 0); }
+const depBal = () => S.dep ? S.dep.amt : 0;
+const savBal = () => S.sav ? S.sav.amt * S.sav.paid : 0;
+/* 적금 이자: n회차 납입금은 남은 기간(년)만큼 이자를 받아요. 2년 적금이면 1회차 2년치 + 2회차 1년치 */
+function savInterest(s){ let t = 0; for (let k = 1; k <= FIN.term; k++) t += interest(s.amt * (FIN.term - k + 1), s.bp); return t; }
+const savNeed = y => S.sav ? Math.min(FIN.term, y - S.sav.y0 + 1) : 0;   // y년차까지 넣었어야 하는 횟수
+
+async function decryptPack(code, p){
+  if (!(window.crypto && crypto.subtle)) throw new Error('nocrypto');
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const enc = new TextEncoder();
+  const mat = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name:'PBKDF2', salt:b64(p.s), iterations:100000, hash:'SHA-256' }, mat, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+  const buf = await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64(p.i) }, key, b64(p.c));
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
+function settle(y, pack){
+  const start = startPrices(y), end = pack.prices;
+  const rows = S.hold.map((q, i) => ({ q, p0:start[i], p1:end[i], v:q * end[i], dv:q * STOCKS[i].d, pl:q * (end[i] - start[i]) }));
+  let valS = 0, valB = 0, div = 0, cpn = 0;
+  rows.forEach((r, i) => { if (isBond(i)){ valB += r.v; cpn += r.dv; } else { valS += r.v; div += r.dv; } });
+  let dep = null, sav = null, depIn = 0, savIn = 0;
+  if (S.dep){ const it = interest(S.dep.amt, S.dep.bp); dep = { amt:S.dep.amt, bp:S.dep.bp, int:it }; depIn = S.dep.amt + it; }
+  if (S.sav){
+    const matured = y === S.sav.y0 + FIN.term - 1 && S.sav.paid === FIN.term;
+    const it = matured ? savInterest(S.sav) : 0;
+    sav = { amt:S.sav.amt, bp:S.sav.bp, paid:S.sav.paid, y0:S.sav.y0, matured, int:it };
+    if (matured) savIn = S.sav.amt * S.sav.paid + it;
+  }
+  const cashBefore = S.cash;
+  const cashEnd = cashBefore + div + cpn + depIn + savIn;
+  const savLeft = sav && !sav.matured ? sav.amt * sav.paid : 0;
+  const total = cashEnd + valS + valB + savLeft;
+  const prev = y === 1 ? START_CASH : S.closed[y - 2].total;
+  const inc = div + cpn + (dep ? dep.int : 0) + (sav ? sav.int : 0);
+  return { y, start, end, rows, value:valS + valB, valS, valB, div, cpn, dep, sav, savLeft, inc, note:(S.notes || {})[y] || '', cashBefore, cashEnd, total, ret:total / prev - 1, cum:total / START_CASH - 1, events:pack.events || [] };
+}
+
+/* 적금 납입: 연초(시작할 때) 자동으로 현금에서 빠져나가요. 현금이 모자라면 '미납'으로 두고, 이번 해 안에 직접 넣을 수 있어요 */
+function payInstallment(auto){
+  const s = S.sav; if (!s || s.paid >= savNeed(S.year)) return '';
+  if (S.cash < s.amt) return auto ? '현금이 모자라 적금 ' + (s.paid + 1) + '회차를 넣지 못했어요. 이번 해가 끝나기 전에 넣어야 해요.' : '';
+  S.cash -= s.amt; s.paid += 1;
+  (S.trades[S.year] = S.trades[S.year] || []).push({ t:'sav', a:s.amt, n:s.paid, auto:!!auto });
+  return '적금 ' + s.paid + '회차 ' + fmt(s.amt) + (auto ? '이 현금에서 자동 납입됐어요.' : '을 넣었어요.');
+}
+/* 한 해가 끝날 때까지 적금을 못 넣었으면 해지(이자 없이 원금만 돌려받음) */
+function resolveUnpaid(){
+  const s = S.sav; if (!s || s.paid >= savNeed(S.year)) return;
+  const back = s.amt * s.paid;
+  S.cash += back; S.sav = null;
+  (S.trades[S.year] = S.trades[S.year] || []).push({ t:'savx', a:back, auto:true });
+  S.notes = S.notes || {};
+  S.notes[S.year] = '적금 ' + (s.paid + 1) + '회차를 넣지 못해 적금이 해지됐어요. 이자 없이 원금 ' + fmt(back) + '만 현금으로 돌려받았어요.';
+}
+
+/* ===== 알림, 확인 창 ===== */
+let toastTimer = null;
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('on'), 2600);
+}
+function confirmBox(msg, okLabel){
+  return new Promise(res => {
+    const v = document.createElement('div');
+    v.className = 'veil';
+    v.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><p>' + esc(msg) + '</p><div class="acts"><button class="btn" data-x="no">취소</button><button class="btn main" data-x="ok">' + esc(okLabel) + '</button></div></div>';
+    const done = r => { v.remove(); document.removeEventListener('keydown', onKey); res(r); };
+    const onKey = e => { if (e.key === 'Escape') done(false); };
+    v.addEventListener('click', e => { const x = e.target.getAttribute && e.target.getAttribute('data-x'); if (x) done(x === 'ok'); else if (e.target === v) done(false); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(v);
+    $('[data-x=no]', v).focus();
+  });
+}
+
+/* ===== 화면 ===== */
+const app = $('#app');
+
+function render(){
+  if (!S) renderStart(); else renderGame();
+  if (ui.focus){
+    const f = ui.focus; ui.focus = null;
+    const el = $('[data-act="' + f.act + '"]' + (f.i != null ? '[data-i="' + f.i + '"]' : ''));
+    if (el && !el.disabled) el.focus();
+  }
+}
+
+function renderStart(){
+  const saves = listSaves();
+  const m = ui.startMode, n = ui.startName;
+  const pn = m ? parseNames(m, n) : {};
+  const exists = m && pn.name && store.get(keyOf(m, pn.name));
+  const tx = startTexts(m);
+  const segs = ['team', 'solo'].map(v => '<label><input type="radio" name="mode" value="' + v + '"' + (m === v ? ' checked' : '') + '><span>' + MODE_LABEL[v] + '</span></label>').join('');
+  app.innerHTML =
+    '<section class="start">' +
+      '<h1>모의 <mark>투자</mark> 게임</h1>' +
+      '<p class="sub">5년 동안 주식·채권·예금에 나눠 투자해서 총자산을 늘려 보세요.</p>' +
+      '<form id="startForm" novalidate>' +
+        '<fieldset class="fieldset"><legend>참여 방식</legend><div class="segs two">' + segs + '</div></fieldset>' +
+        '<label class="field"><span id="nameLbl">' + tx.label + '</span><input type="text" id="nameIn" maxlength="80" autocomplete="off" value="' + esc(n) + '" placeholder="' + esc(tx.ph) + '" aria-describedby="nameHint"></label>' +
+        '<p class="fhint" id="nameHint">' + esc(tx.hint) + '</p>' +
+        '<button class="btn main" type="submit" id="startBtn">' + (exists ? '이어서 하기' : '시작하기') + '</button>' +
+        '<p class="err" id="startErr" role="alert">' + esc(ui.err) + '</p>' +
+      '</form>' +
+      '<div class="rules"><b>게임 규칙</b><ul>' +
+        '<li>시작 자금은 100만 원이에요.</li>' +
+        '<li>주식과 채권은 매년 처음 가격(연초 가격)으로 사고팔 수 있어요. 주식은 일부 회사가 배당금을, 채권은 매년 정해진 이자를 연말에 줘요.</li>' +
+        '<li>정기 예금(1년 만기)과 정기 적금(2년 만기)은 만기가 되면 연말 결과에서 원금과 이자가 현금으로 들어와요.</li>' +
+        '<li>한 해는 ' + (YEAR_SECONDS / 60) + '분이에요. 시간이 지나면 거래가 자동으로 끝나고, 선생님이 알려 주는 연말 코드를 입력하면 결과를 볼 수 있어요.</li>' +
+        '<li>주식·채권 가격은 그 해에 일어난 일에 따라 오를 수도, 내릴 수도 있어요.</li>' +
+      '</ul></div>' +
+      (saves.length ? '<div class="saves"><h2>이 기기에 저장된 기록</h2><ul>' + saves.map(s =>
+        '<li><span>' + esc(s.name) + ' (' + MODE_LABEL[s.mode] + '), ' + (s.stage === 'done' ? '5년 종료' : (s.done + 1) + '년차 진행 중') + '</span><span><button class="btn small" data-act="resume" data-key="' + esc(s.key) + '">이어서 하기</button> <button class="link" data-act="delsave" data-key="' + esc(s.key) + '">삭제</button></span></li>'
+      ).join('') + '</ul></div>' : '') +
+    '</section>';
+  ui.err = '';
+}
+
+function header(){
+  const cur = S.stage === 'done' ? YEARS + 1 : S.year;
+  let tape = '';
+  for (let y = 1; y <= YEARS; y++){
+    const cls = y < cur ? 'done' : y === cur ? 'now' : 'todo';
+    tape += '<li class="' + cls + '"' + (y === cur ? ' aria-current="step"' : '') + '>' + y + '년차' + (y < cur ? '<small>' + fmt(S.closed[y - 1].total) + '</small>' : '') + '</li>';
+  }
+  const done = S.stage === 'done', c5 = done ? S.closed[YEARS - 1] : null;
+  const prices = done ? null : startPrices(S.year);
+  const vS = done ? c5.valS : holdValue(prices, 's'), vB = done ? c5.valB : holdValue(prices, 'b');
+  const vD = done ? c5.savLeft : depBal() + savBal();
+  const cash = done ? c5.cashEnd : S.cash;
+  const total = cash + vS + vB + vD;
+  const label = S.stage === 'done' ? '5년 뒤 총자산' : '현재 총자산 (' + S.year + '년차 연초 가격 기준)';
+  const cum = total / START_CASH - 1;
+  return '<header class="top"><div class="who"><span class="name">' + esc(S.name) + '</span><span class="grp">' + (S.mode === 'team' ? '모둠 ' + S.name.split(', ').length + '명' : '개인') + '</span><button class="link" data-act="home">처음 화면</button></div><ol class="tape" aria-label="진행 상황">' + tape + '</ol></header>' +
+    (S.flagged ? '<p class="warn" role="alert">기록이 직접 수정된 흔적이 있어요. 선생님께 알려 주세요.</p>' : '') +
+    (ui.noStore ? '<p class="warn">이 브라우저에서는 기록이 저장되지 않아요. 이 탭을 닫으면 진행 상황이 사라져요.</p>' : '') +
+    '<section class="board" aria-label="내 자산"><div><span class="label">' + label + '</span><div class="total-num"><mark>' + fmtN(total) + '</mark><small>원</small></div><div class="cum">시작 자금 대비 <b class="' + dir(cum) + '">' + pct(cum) + '</b></div></div>' +
+    '<div class="stats"><div class="stat"><span class="label">현금</span><b>' + fmt(cash) + '</b></div><div class="stat"><span class="label">주식</span><b>' + fmt(vS) + '</b></div><div class="stat"><span class="label">채권</span><b>' + fmt(vB) + '</b></div><div class="stat"><span class="label">예금·적금</span><b>' + fmt(vD) + '</b></div></div>' + clockHTML() + '</section>';
+}
+
+/* ----- 타이머 ----- */
+function remainMs(){
+  if (S.stage === 'ready') return YEAR_SECONDS * 1000;
+  if (S.stage === 'trade') return Math.max(0, S.t0 + YEAR_SECONDS * 1000 - Date.now());
+  return 0;
+}
+const clockText = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function clockHTML(){
+  if (S.stage === 'done') return '';
+  return '<div class="clockbox" id="clockbox"><span class="label" id="clockLabel"></span><div class="clock num" id="clock" role="timer"></div><div class="bar"><i id="clockBar"></i></div></div>';
+}
+function updateClock(){
+  const box = $('#clockbox'); if (!box || !S) return;
+  const ms = remainMs();
+  $('#clock').textContent = clockText(ms);
+  $('#clockLabel').textContent = S.stage === 'ready' ? '시작 전' : S.stage === 'trade' ? '남은 시간' : '시간 종료';
+  $('#clockBar').style.width = (S.stage === 'ready' ? 100 : ms / (YEAR_SECONDS * 10)) + '%';
+  box.classList.toggle('low', S.stage === 'trade' && ms <= 60000);
+  box.classList.toggle('over', S.stage === 'locked');
+  const mini = $('#mini');
+  if (mini){
+    $('#miniLabel').textContent = S.stage === 'locked' ? '시간 종료' : S.stage === 'ready' ? '시작 전' : '남은 시간';
+    $('#miniClock').textContent = clockText(ms);
+    $('#miniCash').textContent = fmt(S.cash);
+    mini.classList.toggle('low', S.stage === 'trade' && ms <= 60000);
+  }
+}
+let io = null;
+function watchBoard(){
+  if (io){ io.disconnect(); io = null; }
+  const board = $('.board'), mini = $('#mini');
+  if (!board || !mini || !('IntersectionObserver' in window)) return;
+  io = new IntersectionObserver(es => {
+    const out = !es[0].isIntersecting;
+    mini.classList.toggle('show', !!(out && S && (S.stage === 'trade' || S.stage === 'locked') && ui.tab === 'trade'));
+  });
+  io.observe(board);
+}
+function normalizeStage(){
+  if (S.stage === 'trade' && Date.now() >= S.t0 + YEAR_SECONDS * 1000){ S.stage = 'locked'; persist(); }
+}
+function lockYear(){
+  S.stage = 'locked'; persist(); ui.tab = 'trade';
+  const keep = ($('#codeIn') || {}).value;
+  toast('시간이 끝났어요. 연말 코드를 입력해 결과를 확인하세요.');
+  render();
+  if (keep && $('#codeIn')) $('#codeIn').value = keep;
+}
+let wake = null;
+async function keepAwake(){
+  try {
+    if (!('wakeLock' in navigator) || !S || S.stage !== 'trade' || (wake && !wake.released)) return;
+    wake = await navigator.wakeLock.request('screen');
+  } catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+function startYear(){
+  if (S.stage !== 'ready') return;
+  S.stage = 'trade'; S.t0 = Date.now(); ui.qty = {}; ui.amt = {};
+  const msg = payInstallment(true);
+  persist(); render(); keepAwake();
+  if (msg) toast(msg);
+}
+function tick(){
+  if (!S) return;
+  if (S.stage === 'trade'){
+    const ms = remainMs();
+    if (ms <= 0){ lockYear(); return; }
+    if (ms <= 60000 && ui.warned !== S.year){ ui.warned = S.year; toast('1분 남았어요.'); }
+  }
+  updateClock();
+}
+setInterval(tick, 250);
+
+function renderGame(){
+  const nClosed = S.closed.length;
+  if (ui.tab === 'result' && !nClosed) ui.tab = 'trade';
+  app.innerHTML = '<div class="mini" id="mini" aria-hidden="true"><span id="miniLabel"></span><b id="miniClock"></b><span>현금 <b id="miniCash"></b></span></div>' + header() +
+    '<div class="tabs" role="tablist"><button class="tab" role="tab" data-act="tab" data-t="trade" aria-selected="' + (ui.tab === 'trade') + '">거래</button>' +
+    '<button class="tab" role="tab" data-act="tab" data-t="result" aria-selected="' + (ui.tab === 'result') + '"' + (nClosed ? '' : ' disabled title="1년차를 마감하면 열려요"') + '>결과</button></div>' +
+    '<main class="sheet">' + (ui.tab === 'trade' ? tradeHTML() : resultHTML()) + '</main>';
+  if (ui.tab === 'trade' && S.stage === 'trade'){ S.hold.forEach((q, i) => refreshRow(i)); refreshFin(); }
+  updateClock(); watchBoard();
+  if (ui.tab === 'result' && ui.reveal) runReveal();
+}
+
+/* ----- 거래 페이지 ----- */
+function sparkSVG(i, y){
+  if (y < 2) return '';
+  const pts = []; for (let k = 1; k <= y; k++) pts.push(startPrices(k)[i]);
+  const mn = Math.min.apply(null, pts), mx = Math.max.apply(null, pts), W = 64, H = 22, pad = 3;
+  const X = k => pad + k * (W - 2 * pad) / (pts.length - 1);
+  const Y = v => mx === mn ? H / 2 : H - pad - (v - mn) * (H - 2 * pad) / (mx - mn);
+  const d = pts.map((v, k) => (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(v).toFixed(1)).join('');
+  const last = pts[pts.length - 1] - pts[pts.length - 2];
+  return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="연초 주가 추이"><path d="' + d + '" fill="none" stroke="#16213E" stroke-width="1.6"/><circle cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(pts[pts.length - 1]).toFixed(1) + '" r="2.6" class="' + dir(last) + '" fill="currentColor"/></svg>';
+}
+
+/* 주식·채권 한 줄 */
+function assetRow(i, p, prevP, live){
+  const s = STOCKS[i], u = UNIT(i), st = STEPS(i), y = S.year;
+  const chg = prevP ? p[i] / prevP[i] - 1 : null;
+  const q = ui.qty[i] == null ? 0 : ui.qty[i];
+  const ctrl = live ?
+    '<div class="c-trade trade"><div class="qty"><button data-act="dec" data-i="' + i + '" aria-label="' + esc(s.n) + ' 수량 줄이기">−</button><input type="text" inputmode="numeric" pattern="[0-9]*" value="' + q + '" data-qty="' + i + '" aria-label="' + esc(s.n) + ' 거래 수량"><button data-act="inc" data-i="' + i + '" aria-label="' + esc(s.n) + ' 수량 늘리기">+</button></div>' +
+    '<span class="chips">' +
+      '<button class="chip" data-act="subq" data-i="' + i + '" data-v="' + st[1] + '" aria-label="' + esc(s.n) + ' ' + st[1] + u + ' 빼기">−' + st[1] + u + '</button>' +
+      '<button class="chip" data-act="subq" data-i="' + i + '" data-v="' + st[0] + '" aria-label="' + esc(s.n) + ' ' + st[0] + u + ' 빼기">−' + st[0] + u + '</button>' +
+      '<button class="chip" data-act="addq" data-i="' + i + '" data-v="' + st[0] + '" aria-label="' + esc(s.n) + ' ' + st[0] + u + ' 더하기">+' + st[0] + u + '</button>' +
+      '<button class="chip" data-act="addq" data-i="' + i + '" data-v="' + st[1] + '" aria-label="' + esc(s.n) + ' ' + st[1] + u + ' 더하기">+' + st[1] + u + '</button></span>' +
+    '<span class="brk"></span>' +
+    '<button class="btn buy" data-act="buy" data-i="' + i + '">사기</button><button class="btn sell" data-act="sell" data-i="' + i + '">팔기</button>' +
+    '<button class="btn sell all" data-act="sellall" data-i="' + i + '" aria-label="' + esc(s.n) + ' 보유분 전량 매도"' + (S.hold[i] > 0 ? '' : ' disabled') + '>전량 매도</button>' +
+    '<span class="est" data-est="' + i + '"></span></div>' :
+    '<div class="c-trade smeta">' + (S.stage === 'ready' ? '시작하면 거래할 수 있어요' : '거래가 끝났어요') + '</div>';
+  const bond = isBond(i), rt = bond && s.rt ? s.rt[y - 1] : '';
+  const meta = bond
+    ? '<div class="smeta"><span>' + esc(s.s) + '</span></div><div class="smeta">신용등급 <span class="rating">' + esc(rt) + '</span> ' + esc((s.rw || {})[rt] || '') + '</div>'
+    : '<div class="smeta"><span>' + esc(s.s) + '</span></div>';
+  return '<div class="lrow' + (bond ? ' bond' : '') + '" data-row="' + i + '">' +
+    '<div class="c-name"><div class="sname">' + esc(s.n) + '</div>' + meta + '</div>' +
+    '<div class="price cellp" data-l="' + (bond ? '연초 가격' : '연초 주가') + '"><b class="num">' + fmt(p[i]) + '</b>' + (chg == null ? '' : '<span class="chg ' + dir(chg) + '">' + arrow(chg) + ' 작년 대비 ' + pct(chg) + '</span>') + sparkSVG(i, y) + '</div>' +
+    '<div class="cellp num" data-l="' + (bond ? '이자' : '배당') + '">' + (s.d ? fmt(s.d) : '없음') + '</div>' +
+    '<div class="cellp num" data-l="보유"><b data-hold="' + i + '">' + S.hold[i] + '</b>' + u + '</div>' +
+    '<div class="cellp num" data-l="평가액"><b data-val="' + i + '">' + fmt(S.hold[i] * p[i]) + '</b></div>' + ctrl +
+    (bond && s.desc ? '<p class="bnote">' + esc(s.desc) + '</p>' : '') + '</div>';
+}
+
+/* 예금·적금 금액 조절 칸 (만 원 단위) */
+function amtCtrl(k, label){
+  const v = ui.amt[k] || 0, nm = k === 'dep' ? '정기 예금' : '정기 적금';
+  const chip = (d, txt) => '<button class="chip" data-act="damt" data-k="' + k + '" data-v="' + d + '" aria-label="' + nm + ' 금액 ' + txt + '">' + txt + '</button>';
+  return '<div class="trade dtrade"><div class="qty"><button data-act="damt" data-k="' + k + '" data-v="-1" aria-label="' + nm + ' 금액 1만 원 줄이기">−</button><input type="text" inputmode="numeric" pattern="[0-9]*" value="' + v + '" data-amt="' + k + '" aria-label="' + nm + ' 금액(만 원)"><button data-act="damt" data-k="' + k + '" data-v="1" aria-label="' + nm + ' 금액 1만 원 늘리기">+</button></div><span class="unit">만 원</span>' +
+    '<span class="chips">' + chip(-50, '−50만') + chip(-10, '−10만') + chip(10, '+10만') + chip(50, '+50만') + '</span><span class="brk"></span>' +
+    '<button class="btn main" data-act="' + k + 'join">' + label + '</button><span class="est" data-dest="' + k + '"></span></div>';
+}
+
+function finHTML(){
+  const y = S.year, live = S.stage === 'trade';
+  const depBp = FIN.dep[y - 1], savBp = FIN.sav[y - 1];
+  /* 정기 예금 */
+  let d = '<div class="dcard"><h4>정기 예금 <small>1년 만기 · 한 번에 맡기기</small></h4><p class="drate">올해 가입 이자율 <b>' + rateTxt(depBp) + '</b></p>';
+  if (S.dep){
+    const it = interest(S.dep.amt, S.dep.bp);
+    d += '<p class="dnow">가입 중: 원금 <b>' + fmt(S.dep.amt) + '</b> → 올해 연말에 이자 <b>' + fmt(it) + '</b>을 더해 <b>' + fmt(S.dep.amt + it) + '</b>이 현금으로 들어와요.</p>';
+  } else d += '<p class="dnow muted">돈을 한 번에 맡기면 올해 연말(만기)에 원금과 이자가 현금으로 들어와요. 다음 해에 다시 가입할 수 있어요.</p>';
+  if (live) d += amtCtrl('dep', S.dep ? '더 맡기기' : '가입하기') + (S.dep ? '<p class="dsub"><button class="link" data-act="depcancel">예금 해지하기</button> 만기 전에 해지하면 이자 없이 원금만 돌려받아요.</p>' : '');
+  d += '</div>';
+  /* 정기 적금 */
+  let s = '<div class="dcard"><h4>정기 적금 <small>2년 만기 · 매년 같은 금액 넣기</small></h4>';
+  if (S.sav){
+    const v = S.sav, need = savNeed(y);
+    s += '<p class="drate">가입한 이자율 <b>' + rateTxt(v.bp) + '</b> <span class="muted">(' + v.y0 + '년차 가입)</span></p>';
+    if (v.paid < need){
+      s += '<p class="warn">' + (v.paid + 1) + '회차 ' + fmt(v.amt) + '을 아직 못 넣었어요. 현금을 마련해 넣어 주세요. 이번 해가 끝날 때까지 못 넣으면 적금이 해지되고 이자 없이 원금만 돌려받아요.</p>' +
+        (live ? '<button class="btn main" data-act="savpay"' + (S.cash >= v.amt ? '' : ' disabled') + '>' + (v.paid + 1) + '회차 ' + fmt(v.amt) + ' 넣기</button>' : '');
+    } else if (v.paid < FIN.term){
+      s += '<p class="dnow">' + v.paid + '회차 <b>' + fmt(v.amt) + '</b> 넣음. <b>내년 연초(시작할 때) ' + (v.paid + 1) + '회차 ' + fmt(v.amt) + '이 현금에서 자동으로 빠져나가요.</b> 현금을 남겨 두세요. 모자라면 그 해 안에 직접 넣어야 해요.</p>' +
+        '<p class="dnow">만기(' + (v.y0 + FIN.term - 1) + '년차 연말)에 받을 돈: 원금 ' + fmt(v.amt * FIN.term) + ' + 이자 ' + fmt(savInterest(v)) + '</p>';
+    } else {
+      s += '<p class="dnow">' + FIN.term + '회차까지 모두 넣었어요(원금 <b>' + fmt(v.amt * v.paid) + '</b>). 올해 연말 만기: 이자 <b>' + fmt(savInterest(v)) + '</b>을 더해 <b>' + fmt(v.amt * v.paid + savInterest(v)) + '</b>이 현금으로 들어와요.</p>';
+    }
+    if (live) s += '<p class="dsub"><button class="link" data-act="savcancel">적금 해지하기</button> 만기 전에 해지하면 이자 없이 원금만 돌려받아요.</p>';
+  } else if (savBp){
+    s += '<p class="drate">올해 가입 이자율 <b>' + rateTxt(savBp) + '</b></p><p class="dnow muted">올해와 내년 연초에 같은 금액을 넣으면, 내년 연말(만기)에 원금과 이자가 현금으로 들어와요. 1회차로 넣은 돈은 2년, 2회차는 1년 동안 이자가 붙어요.</p>';
+    if (live) s += amtCtrl('sav', '가입하기 (1회차 넣기)');
+  } else {
+    s += '<p class="dnow muted">5년차에는 2년 만기가 게임 안에 오지 않아서 새로 가입할 수 없어요.</p>';
+  }
+  s += '</div>';
+  return '<div class="dgrid">' + d + s + '</div>';
+}
+
+function logLine(t, p){
+  if (t.t === 'dep') return '정기 예금에 ' + fmt(t.a) + ' 맡김';
+  if (t.t === 'depx') return '정기 예금 해지 (원금 ' + fmt(t.a) + ' 돌려받음)';
+  if (t.t === 'sav') return '정기 적금 ' + t.n + '회차 ' + fmt(t.a) + (t.auto ? ' 자동 납입' : ' 넣음');
+  if (t.t === 'savx') return '정기 적금 해지 (원금 ' + fmt(t.a) + ' 돌려받음)' + (t.auto ? ' — 납입하지 못해 자동 해지' : '');
+  return esc(STOCKS[t.i].n) + ' ' + Math.abs(t.q) + UNIT(t.i) + (t.q > 0 ? '를 샀어요 (' : '를 팔았어요 (') + fmtS(-t.q * p[t.i]) + ')';
+}
+
+function tradeHTML(){
+  if (S.stage === 'done'){
+    return '<h2>5년 투자가 끝났어요</h2><p class="lead">결과 탭에서 최종 결과를 확인하세요.</p><button class="btn main" data-act="tab" data-t="result">최종 결과 보기</button>';
+  }
+  const y = S.year, p = startPrices(y), prevP = y > 1 ? startPrices(y - 1) : null;
+  const live = S.stage === 'trade', mins = YEAR_SECONDS / 60;
+  let sRows = '', bRows = '';
+  STOCKS.forEach((s, i) => { if (isBond(i)) bRows += assetRow(i, p, prevP, live); else sRows += assetRow(i, p, prevP, live); });
+  const nS = STOCKS.filter(s => s.k !== 'b').length, nB = STOCKS.length - nS;
+  const trades = S.trades[y] || [];
+  const log = trades.length ? '<ul>' + trades.slice().reverse().map(t => '<li>' + logLine(t, p) + '</li>').join('') + '</ul>' : '<p style="margin:6px 0 0;font-size:14px;color:var(--ink-2)">아직 거래가 없어요.</p>';
+  const lead = S.stage === 'ready' ? '올해 가격과 이자율을 미리 살펴보세요. 시작하기를 누르면 ' + mins + '분 타이머가 돌아가고 투자할 수 있어요.' :
+    S.stage === 'locked' ? '시간이 끝나서 이번 해 거래가 끝났어요. 아래에서 연말 코드를 입력하면 결과를 볼 수 있어요.' :
+    '가진 돈 안에서 주식·채권을 사고팔고, 예금·적금에 가입할 수 있어요. ' + mins + '분이 지나면 이번 해가 자동으로 끝나요.';
+  const v = S.sav, due = S.stage === 'ready' && v && v.paid < savNeed(y);
+  const dueTxt = due ? '<p><b>시작하면 정기 적금 ' + (v.paid + 1) + '회차 ' + fmt(v.amt) + '이 현금에서 자동으로 빠져나가요.</b> (지금 현금 ' + fmt(S.cash) + ')' + (S.cash < v.amt ? ' 현금이 모자라면 시작한 뒤 주식·채권을 팔아 직접 넣어야 해요.' : '') + '</p>' : '';
+  const startBox = S.stage === 'ready' ? '<div class="box startbox"><h3>' + y + '년차 시작하기</h3><p>선생님이 시작이라고 하면 누르세요. 누르는 순간부터 ' + mins + '분이 지나면 이번 해가 자동으로 끝나요.</p>' + dueTxt + '<button class="btn main" data-act="start">' + y + '년차 시작하기</button></div>' : '';
+  const note = S.notes && S.notes[y] ? '<p class="warn">' + esc(S.notes[y]) + '</p>' : '';
+  const closeBox = S.stage === 'ready' ? '' :
+    '<div class="box"><h3>' + y + '년차 ' + (S.stage === 'locked' ? '결과 확인하기' : '마감하기') + '</h3><p>' +
+    (S.stage === 'locked' ? '선생님이 알려 주는 ' + y + '년차 연말 코드를 입력하면 결과를 볼 수 있어요.' : '시간이 끝나기 전에 연말 코드를 받았다면 바로 마감할 수 있어요. 마감하면 이번 해 거래를 바꿀 수 없어요.') + '</p>' +
+    '<form class="closebox" id="closeForm" autocomplete="off"><input type="text" id="codeIn" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="연말 코드 6자리" aria-label="연말 코드, 숫자 6자리" autocomplete="off" spellcheck="false"><button class="btn main" type="submit"' + (ui.busy ? ' disabled' : '') + '>' + (ui.busy ? '확인하는 중…' : S.stage === 'locked' ? '결과 보기' : '마감하고 결과 보기') + '</button></form>' +
+    '<p class="err" id="closeErr" role="alert">' + esc(ui.err) + '</p></div>';
+  return '<h2>' + y + '년차 투자</h2><p class="lead">' + lead + '</p>' + note + startBox +
+    '<h3 class="sec">주식 <small>' + nS + '종목</small></h3><p class="secd">회사의 주인(주주)이 되는 증서예요. 가격은 회사와 경제 소식에 따라 매년 달라지고, 일부 회사는 연말에 1주당 배당금을 줘요.</p>' +
+    '<div class="ledger"><div class="lrow lhead" aria-hidden="true"><div>종목</div><div>연초 주가</div><div>배당(1주)</div><div>보유</div><div>평가액</div><div>거래</div></div>' + sRows + '</div>' +
+    '<h3 class="sec">채권 <small>' + nB + '종류 · 1좌 = 1만 원</small></h3><p class="secd">정부·지방자치단체·회사에 돈을 빌려주고 받는 증서예요. 연말에 1좌당 정해진 이자를 받고, 가격은 금리와 발행한 곳의 신용도(돈을 갚을 능력)에 따라 달라져요.</p>' +
+    '<div class="ledger bonds"><div class="lrow lhead" aria-hidden="true"><div>채권</div><div>연초 가격</div><div>이자(1좌)</div><div>보유</div><div>평가액</div><div>거래</div></div>' + bRows + '</div>' +
+    '<h3 class="sec">예금·적금 <small>은행</small></h3><p class="secd">은행에 돈을 맡기고 약속한 이자를 받아요. 만기가 되면 연말 결과에서 원금과 이자가 현금으로 자동으로 들어와요.</p>' + finHTML() +
+    (closeBox ? '<div class="panel2">' + closeBox + '</div>' : '') +
+    '<details class="log box" style="margin-top:16px"' + (trades.length ? ' open' : '') + '><summary>이번 해 거래 내역 (' + trades.length + '건)</summary>' + log + '</details>';
+}
+
+function refreshRow(i){
+  const row = $('[data-row="' + i + '"]'); if (!row || !$('[data-qty="' + i + '"]', row)) return;
+  const p = startPrices(S.year)[i];
+  const input = $('[data-qty="' + i + '"]', row);
+  const q = Math.max(0, parseInt(input.value, 10) || 0);
+  const cost = q * p;
+  $('[data-est="' + i + '"]', row).textContent = q ? (q + UNIT(i) + ' = ' + fmt(cost)) : '수량을 정해 주세요.';
+  $('[data-act=buy]', row).disabled = !(q >= 1 && cost <= S.cash);
+  $('[data-act=sell]', row).disabled = !(q >= 1 && q <= S.hold[i]);
+  $('[data-act=sellall]', row).disabled = !(S.hold[i] > 0);
+}
+
+function refreshFin(){
+  ['dep', 'sav'].forEach(k => {
+    const input = $('[data-amt="' + k + '"]'); if (!input) return;
+    const a = Math.max(0, parseInt(input.value, 10) || 0) * 100;
+    const est = $('[data-dest="' + k + '"]'), btn = $('[data-act="' + k + 'join"]');
+    const bp = k === 'dep' ? (S.dep ? S.dep.bp : FIN.dep[S.year - 1]) : FIN.sav[S.year - 1];
+    if (!a) est.textContent = '맡길 금액을 정해 주세요.';
+    else if (a > S.cash) est.textContent = '현금(' + fmt(S.cash) + ')보다 많아요.';
+    else if (k === 'dep') est.textContent = fmt(a) + ' 맡기면 연말 이자 ' + fmt(interest(a, bp));
+    else est.textContent = '매년 ' + fmt(a) + ' × ' + FIN.term + '번 → 만기 이자 ' + fmt(savInterest({ amt:a, bp:bp }));
+    btn.disabled = !(a >= 100 && a <= S.cash);
+  });
+}
+
+/* ----- 결과 페이지 ----- */
+function lineChart(){
+  const pts = [START_CASH].concat(S.closed.map(c => c.total));
+  const W = 640, H = 230, L = 54, R = 18, T = 18, B = 34;
+  const mn = Math.min(START_CASH, Math.min.apply(null, pts)), mx = Math.max(START_CASH, Math.max.apply(null, pts));
+  const lo = Math.floor((mn - (mx - mn) * 0.15 - 1) / 1000) * 1000, hi = Math.ceil((mx + (mx - mn) * 0.15 + 1) / 1000) * 1000;
+  const X = k => L + k * (W - L - R) / YEARS;
+  const Y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  let g = '';
+  for (let v = lo; v <= hi + 1; v += (hi - lo) / 4){ const yy = Y(v).toFixed(1); g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#C9D5CC"/><text x="' + (L - 6) + '" y="' + (+yy + 4) + '" text-anchor="end" font-size="11" fill="#4B5568">' + Math.round(v / 100) + '만</text>'; }
+  let x = ''; for (let k = 0; k <= YEARS; k++) x += '<text x="' + X(k).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="12" fill="#4B5568">' + (k ? k + '년차' : '시작') + '</text>';
+  const base = '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(START_CASH).toFixed(1) + '" y2="' + Y(START_CASH).toFixed(1) + '" stroke="#16213E" stroke-dasharray="5 4"/>';
+  const path = pts.map((v, k) => (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(v).toFixed(1)).join('');
+  const dots = pts.map((v, k) => '<circle cx="' + X(k).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="4.5" class="' + (k ? dir(v - pts[k - 1]) : 'flat') + '" fill="currentColor" stroke="#fff" stroke-width="1.5"/>' + (k ? '<text x="' + X(k).toFixed(1) + '" y="' + (Y(v) - 10).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#16213E">' + fmtM(v) + '</text>' : '')).join('');
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="연도별 총자산 변화">' + g + base + x + '<path d="' + path + '" fill="none" stroke="#16213E" stroke-width="2.5"/>' + dots + '</svg>';
+}
+
+function finalHTML(){
+  const c5 = S.closed[YEARS - 1];
+  const mult = i => (c5.end[i] + YEARS * STOCKS[i].d) / STOCKS[i].p;     // 5년 보유 시 배당·이자 포함 배수
+  const st = STOCKS.map((s, i) => i).filter(i => !isBond(i)), bd = STOCKS.map((s, i) => i).filter(isBond);
+  const best = st.reduce((a, b) => mult(b) > mult(a) ? b : a), worst = st.reduce((a, b) => mult(b) < mult(a) ? b : a);
+  const eqS = st.reduce((a, i) => a + (START_CASH / st.length) * mult(i), 0);
+  const eqB = bd.reduce((a, i) => a + (START_CASH / bd.length) * mult(i), 0);
+  let depOnly = START_CASH; for (let k = 0; k < YEARS; k++) depOnly += interest(depOnly, FIN.dep[k]);
+  const byName = n => bd.find(i => STOCKS[i].n === n);
+  const gov = byName('국채'), corp = byName('회사채');
+  const list = [
+    { l:'내 투자', v:c5.total, me:true },
+    { l:'현금으로만 보관', v:START_CASH },
+    { l:'정기 예금에만 맡기기 (매년 다시 가입)', v:depOnly },
+    gov != null ? { l:'국채에만 투자', v:Math.round(START_CASH * mult(gov)) } : null,
+    corp != null ? { l:'회사채에만 투자', v:Math.round(START_CASH * mult(corp)) } : null,
+    { l:'주식 ' + st.length + '종목에 똑같이 나눠 투자', v:Math.round(eqS) },
+    { l:'주식·채권·예금에 3분의 1씩 나눠 투자', v:Math.round((eqS + eqB + depOnly) / 3) },
+    { l:'가장 많이 오른 ' + STOCKS[best].n + '에 모두 투자', v:Math.round(START_CASH * mult(best)) },
+    { l:'가장 많이 내린 ' + STOCKS[worst].n + '에 모두 투자', v:Math.round(START_CASH * mult(worst)) }
+  ].filter(Boolean).sort((a, b) => b.v - a.v);
+  const incAll = S.closed.reduce((a, c) => a + (c.inc || 0), 0);
+  return '<h3 class="sec">5년 투자 결과</h3>' +
+    '<div class="sumrow"><div class="big"><span class="k">5년 뒤 총자산</span><span class="v">' + fmt(c5.total) + '</span></div><div><span class="k">5년 수익률</span><span class="v ' + dir(c5.cum) + '">' + pct(c5.cum) + '</span></div><div><span class="k">받은 배당금·이자 합계</span><span class="v">' + fmt(incAll) + '</span></div></div>' +
+    '<h3 class="sec">다른 방법으로 투자했다면</h3>' +
+    '<table class="cmp"><caption style="text-align:left;font-size:14px;color:var(--ink-2);padding-bottom:6px">배당금과 이자를 포함하고, 처음에 산 뒤 5년 동안 사고팔지 않았다고 가정했어요. (예금은 매년 원금과 이자를 다시 맡김)</caption><thead><tr><th>투자 방법</th><th>5년 뒤 총자산</th></tr></thead><tbody>' +
+    list.map(r => '<tr' + (r.me ? ' class="me"' : '') + '><td>' + esc(r.l) + '</td><td>' + fmt(r.v) + '</td></tr>').join('') + '</tbody></table>' +
+    '<h3 class="sec">돌아보기</h3><ol class="reflect">' +
+      '<li>주식, 채권, 예금·적금에 각각 얼마씩 나눠 투자했나요? 그렇게 나눈 까닭은 무엇인가요?</li>' +
+      '<li>5년 동안 가장 크게 오르내린 자산과 가장 안정적이었던 자산은 무엇이었나요? 수익성과 안전성은 어떤 관계가 있을까요?</li>' +
+      '<li>국채·지방채·회사채의 이자는 왜 서로 다를까요? 발행한 곳의 신용도와 어떤 관계가 있나요?</li>' +
+      '<li>금리가 내리거나 오른 해에 채권 가격과 예금 이자율은 어떻게 달라졌나요?</li>' +
+      '<li>선생님께 받은 힌트를 어떻게 활용했나요? 힌트를 받은 해와 받지 않은 해의 결과는 어떻게 달랐나요?</li></ol>';
+}
+
+/* 결과 화면: 예금·적금 내역 */
+function finResultHTML(c){
+  const li = [];
+  if (c.dep) li.push('<li><b>정기 예금</b> 만기 — 원금 ' + fmt(c.dep.amt) + ' + 이자 ' + fmt(c.dep.int) + ' (' + rateTxt(c.dep.bp) + ') = <b>' + fmt(c.dep.amt + c.dep.int) + '</b>이 현금으로 들어왔어요.</li>');
+  if (c.sav){
+    if (c.sav.matured) li.push('<li><b>정기 적금</b> 만기 — ' + c.sav.paid + '번 넣은 원금 ' + fmt(c.sav.amt * c.sav.paid) + ' + 이자 ' + fmt(c.sav.int) + ' (' + rateTxt(c.sav.bp) + ') = <b>' + fmt(c.sav.amt * c.sav.paid + c.sav.int) + '</b>이 현금으로 들어왔어요.</li>');
+    else li.push('<li><b>정기 적금</b> 진행 중 — 지금까지 넣은 원금 ' + fmt(c.sav.amt * c.sav.paid) + '. 내년 연초에 ' + (c.sav.paid + 1) + '회차 ' + fmt(c.sav.amt) + '이 자동 납입되고, ' + (c.sav.y0 + FIN.term - 1) + '년차 연말에 만기가 돼요.</li>');
+  }
+  if (c.note) li.push('<li>' + esc(c.note) + '</li>');
+  return li.length ? '<h3 class="sec">예금·적금</h3><ul class="finres">' + li.join('') + '</ul>' : '';
+}
+
+function resultLedger(c, kind, num){
+  let rows = '';
+  c.rows.forEach((r, i) => {
+    if ((kind === 'b') !== isBond(i)) return;
+    const chg = r.p1 / r.p0 - 1, u = UNIT(i);
+    rows += '<div class="rrow' + (r.q ? '' : ' off') + '">' +
+      '<div class="c-name"><b>' + esc(STOCKS[i].n) + '</b>' + (r.q ? '<span class="mine">보유 ' + r.q + u + '</span>' : '') + '</div>' +
+      '<div class="r cellp num" data-l="연초">' + fmt(r.p0) + '</div>' +
+      '<div class="r cellp num" data-l="연말"><b>' + num(r.p0, r.p1) + '</b></div>' +
+      '<div class="r cellp num ' + dir(chg) + '" data-l="등락률"><b>' + arrow(chg) + ' ' + pct(chg) + '</b></div>' +
+      '<div class="r cellp num" data-l="보유">' + r.q + u + '</div>' +
+      '<div class="r cellp num ' + (r.q ? dir(r.pl) : 'flat') + '" data-l="평가 손익"><b>' + (r.q ? fmtS(r.pl) : '–') + '</b></div>' +
+      '<div class="r cellp num" data-l="' + (kind === 'b' ? '이자' : '배당금') + '">' + (r.dv ? fmt(r.dv) : '–') + '</div></div>';
+  });
+  const h = kind === 'b'
+    ? '<div>채권</div><div class="r">연초 가격</div><div class="r">연말 가격</div><div class="r">등락률</div><div class="r">보유</div><div class="r">평가 손익</div><div class="r">이자</div>'
+    : '<div>종목</div><div class="r">연초 주가</div><div class="r">연말 주가</div><div class="r">등락률</div><div class="r">보유</div><div class="r">평가 손익</div><div class="r">배당금</div>';
+  return '<h3 class="sec">' + (kind === 'b' ? '채권' : '주식') + '</h3><div class="ledger"><div class="rrow rhead" aria-hidden="true">' + h + '</div>' + rows + '</div>';
+}
+
+function resultHTML(){
+  const n = S.closed.length;
+  if (!n) return '<h2>결과</h2><p class="lead">아직 마감한 해가 없어요. 1년차를 마감하면 결과를 볼 수 있어요.</p>';
+  let y = ui.resultYear && ui.resultYear <= n ? ui.resultYear : n;
+  const c = S.closed[y - 1];
+  const chips = S.closed.map(k => '<button data-act="ryear" data-y="' + k.y + '" aria-pressed="' + (k.y === y) + '">' + k.y + '년차</button>').join('');
+  const fresh = ui.reveal === y;
+  const num = (from, to, cls) => '<span class="num rv ' + (cls || '') + '" data-from="' + from + '" data-to="' + to + '">' + fmt(fresh ? from : to) + '</span>';
+  const prevTotal = y === 1 ? START_CASH : S.closed[y - 2].total;
+  const ev = (c.events || []).map(e => {
+    const pills = Object.keys(e.fx || {}).map(L => {
+      const i = L.charCodeAt(0) - 65, v = e.fx[L];
+      return '<span class="pill ' + dir(v) + '">' + esc(STOCKS[i].n) + ' ' + (v > 0 ? '+' : '−') + Math.abs(v) + '%</span>';
+    }).join('');
+    return '<li><span class="tag">' + esc(e.cat) + '</span><b class="num" style="font-size:13px;color:var(--ink-2)">' + esc(e.id) + '</b><div>' + esc(e.desc) + '</div><div>' + pills + '</div></li>';
+  }).join('');
+  const code = hash53([S.mode, S.name, y, c.total, S.flagged ? 1 : 0].join('|') + SIG_SALT).slice(0, 5).toUpperCase();
+  const nextBtn = (y === n && S.stage !== 'done') ? '<button class="btn main" data-act="next">' + S.year + '년차 준비하기</button>' : '';
+  return '<h2>' + y + '년차 결과</h2><div class="ychips" role="group" aria-label="연도 선택">' + chips + '</div>' +
+    '<div class="sumrow"><div class="big"><span class="k">연말 총자산</span><span class="v">' + num(prevTotal, c.total) + '</span></div>' +
+    '<div><span class="k">이번 해 수익률</span><span class="v ' + dir(c.ret) + '">' + pct(c.ret) + '</span></div>' +
+    '<div><span class="k">시작 자금 대비</span><span class="v ' + dir(c.cum) + '">' + pct(c.cum) + '</span></div>' +
+    '<div><span class="k">배당금·이자</span><span class="v">' + fmt(c.inc || 0) + '</span></div>' +
+    '</div>' +
+    resultLedger(c, 's', num) + resultLedger(c, 'b', num) + finResultHTML(c) +
+    '<h3 class="sec">이번 해 있었던 일</h3><ul class="events">' + ev + '</ul>' +
+    '<h3 class="sec">총자산 변화</h3>' + lineChart() +
+    (y === YEARS && S.stage === 'done' ? finalHTML() : '') +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;align-items:center">' + nextBtn +
+    '<button class="btn" data-act="copy" data-y="' + y + '">결과 복사하기</button><span class="smeta">확인 번호 ' + code + '</span></div>';
+}
+
+function runReveal(){
+  const y = ui.reveal; ui.reveal = null;
+  const els = Array.prototype.slice.call(document.querySelectorAll('.rv'));
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce){ els.forEach(el => { el.textContent = fmt(+el.getAttribute('data-to')); }); return; }
+  const dur = 1100, t0 = performance.now();
+  function frame(t){
+    let alive = false;
+    els.forEach((el, k) => {
+      const delay = k < 10 ? k * 70 : 0;
+      const p = Math.min(1, Math.max(0, (t - t0 - delay) / dur));
+      const e = 1 - Math.pow(1 - p, 3);
+      const a = +el.getAttribute('data-from'), b = +el.getAttribute('data-to');
+      el.textContent = fmt(Math.round(a + (b - a) * e));
+      if (p < 1) alive = true;
+    });
+    if (alive) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ===== 동작 ===== */
+function setQty(i, v){ ui.qty[i] = Math.max(0, Math.min(9999, v | 0)); const el = $('[data-qty="' + i + '"]'); if (el) el.value = ui.qty[i]; refreshRow(i); }
+function getQty(i){ const el = $('[data-qty="' + i + '"]'); return Math.max(0, parseInt(el && el.value, 10) || 0); }
+
+function trade(i, sign){
+  if (S.stage !== 'trade' || remainMs() <= 0) return;
+  const q = getQty(i), p = startPrices(S.year)[i];
+  if (q < 1) return;
+  if (sign > 0){ if (q * p > S.cash) return; S.cash -= q * p; S.hold[i] += q; }
+  else { if (q > S.hold[i]) return; S.cash += q * p; S.hold[i] -= q; }
+  (S.trades[S.year] = S.trades[S.year] || []).push({ i, q:sign * q });
+  persist();
+  toast(STOCKS[i].n + ' ' + q + UNIT(i) + '를 ' + (sign > 0 ? '샀어요' : '팔았어요') + ' (' + fmtS(-sign * q * p) + ')');
+  ui.focus = { act: sign > 0 ? 'buy' : 'sell', i };
+  delete ui.qty[i];
+  render();
+}
+
+function setAmt(k, v){ ui.amt[k] = Math.max(0, Math.min(9999, v | 0)); const el = $('[data-amt="' + k + '"]'); if (el) el.value = ui.amt[k]; refreshFin(); }
+function getAmt(k){ const el = $('[data-amt="' + k + '"]'); return Math.max(0, parseInt(el && el.value, 10) || 0); }
+
+function finJoin(k){
+  if (S.stage !== 'trade' || remainMs() <= 0) return;
+  const y = S.year, a = getAmt(k) * 100, log = (S.trades[y] = S.trades[y] || []);
+  if (a < 100 || a > S.cash) return;
+  if (k === 'dep'){
+    if (S.dep) S.dep.amt += a; else S.dep = { y, amt:a, bp:FIN.dep[y - 1] };
+    S.cash -= a; log.push({ t:'dep', a });
+    toast('정기 예금에 ' + fmt(a) + '을 맡겼어요.');
+  } else {
+    if (S.sav || !FIN.sav[y - 1]) return;
+    S.sav = { y0:y, amt:a, paid:1, bp:FIN.sav[y - 1] };
+    S.cash -= a; log.push({ t:'sav', a, n:1 });
+    toast('정기 적금에 가입했어요. 1회차 ' + fmt(a) + '을 넣었어요.');
+  }
+  ui.amt[k] = 0; persist(); render();
+}
+async function finCancel(k){
+  if (S.stage !== 'trade' || remainMs() <= 0) return;
+  const y = S.year, log = (S.trades[y] = S.trades[y] || []);
+  if (k === 'dep' && S.dep){
+    S.cash += S.dep.amt; log.push({ t:'depx', a:S.dep.amt });
+    toast('정기 예금을 해지했어요. 원금 ' + fmt(S.dep.amt) + '을 돌려받았어요.'); S.dep = null;
+  } else if (k === 'sav' && S.sav){
+    const back = S.sav.amt * S.sav.paid;
+    if (S.sav.y0 !== y && !(await confirmBox('만기 전에 해지하면 이자를 받지 못하고 지금까지 넣은 원금 ' + fmt(back) + '만 돌려받아요. 해지할까요?', '해지하기'))) return;
+    S.cash += back; log.push({ t:'savx', a:back });
+    toast('정기 적금을 해지했어요. 원금 ' + fmt(back) + '을 돌려받았어요.'); S.sav = null;
+  } else return;
+  persist(); render();
+}
+
+async function closeYear(){
+  const input = $('#codeIn'); const code = (input.value || '').trim().toUpperCase();
+  const y = S.year;
+  if (S.stage !== 'trade' && S.stage !== 'locked') return;
+  if (!code){ ui.err = '연말 코드를 입력하세요.'; $('#closeErr').textContent = ui.err; return; }
+  if (S.stage === 'trade'){ const ok = await confirmBox(y + '년차를 마감할까요? 마감하면 이번 해 거래를 바꿀 수 없어요.', '마감하기'); if (!ok) return; }
+  ui.busy = true; ui.err = ''; render();
+  try {
+    const pack = await decryptPack(code, PACKS[y]);
+    if (!pack || !Array.isArray(pack.prices) || pack.prices.length !== STOCKS.length) throw new Error('bad');
+    resolveUnpaid();
+    const rec = settle(y, pack);
+    S.cash = rec.cashEnd;
+    S.dep = null;
+    if (rec.sav && rec.sav.matured) S.sav = null;
+    S.closed.push(rec);
+    if (y < YEARS){ S.year = y + 1; S.stage = 'ready'; S.t0 = 0; } else S.stage = 'done';
+    persist();
+    ui.busy = false; ui.tab = 'result'; ui.resultYear = y; ui.reveal = y; ui.qty = {};
+    render(); window.scrollTo({ top:0 });
+  } catch(e){
+    ui.busy = false;
+    ui.err = e && e.message === 'nocrypto' ? '이 브라우저에서는 열 수 없어요. Chrome이나 Edge 최신 버전에서 파일을 직접 열어 주세요.' : '코드가 맞지 않아요. 선생님이 알려 준 ' + y + '년차 연말 코드를 다시 확인하세요.';
+    render();
+  }
+}
+
+function copyText(t){
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+  return new Promise((res, rej) => {
+    const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy') ? res() : rej(); } catch(e){ rej(e); } ta.remove();
+  });
+}
+
+/* ===== 이벤트 연결 ===== */
+app.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'startForm'){
+    const raw = $('#nameIn').value, mode = (document.querySelector('input[name=mode]:checked') || {}).value;
+    ui.startName = raw;
+    if (!mode){ ui.err = '참여 방식(모둠 또는 개인)을 선택하세요.'; render(); return; }
+    ui.startMode = mode;
+    const pn = parseNames(mode, raw);
+    if (pn.err){ ui.err = pn.err; render(); $('#nameIn').focus(); return; }
+    S = loadGame(mode, pn.name) || newGame(mode, pn.name);
+    if (!store.get(keyOf(S.mode, S.name))) persist();
+    normalizeStage();
+    ui.tab = S.stage === 'done' ? 'result' : 'trade'; ui.err = ''; ui.qty = {}; ui.resultYear = null;
+    render();
+  } else if (e.target.id === 'closeForm'){ closeYear(); }
+});
+
+/* 시작 화면: 입력한 내용에 맞춰 안내 문구와 버튼 글자만 바꿈 (입력 중인 칸은 그대로 둠) */
+function syncStart(){
+  const m = ui.startMode, tx = startTexts(m);
+  $('#nameLbl').textContent = tx.label; $('#nameIn').placeholder = tx.ph; $('#nameHint').textContent = tx.hint;
+  const pn = m ? parseNames(m, ui.startName) : {};
+  $('#startBtn').textContent = pn.name && store.get(keyOf(m, pn.name)) ? '이어서 하기' : '시작하기';
+}
+
+app.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'nameIn'){ ui.startName = t.value; syncStart(); }
+  else if (t.getAttribute && t.getAttribute('data-qty') != null){
+    const i = +t.getAttribute('data-qty'); t.value = t.value.replace(/[^0-9]/g, '').slice(0, 4); ui.qty[i] = parseInt(t.value, 10) || 0; refreshRow(i);
+  } else if (t.getAttribute && t.getAttribute('data-amt') != null){
+    const k = t.getAttribute('data-amt'); t.value = t.value.replace(/[^0-9]/g, '').slice(0, 4); ui.amt[k] = parseInt(t.value, 10) || 0; refreshFin();
+  } else if (t.id === 'codeIn'){ t.value = t.value.replace(/[^0-9]/g, ''); }
+});
+
+app.addEventListener('change', e => {
+  if (e.target.name === 'mode'){ ui.startMode = e.target.value; syncStart(); }
+});
+
+app.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.getAttribute('data-act'), i = +b.getAttribute('data-i');
+  if (act === 'buy') trade(i, 1);
+  else if (act === 'sell') trade(i, -1);
+  else if (act === 'inc') setQty(i, getQty(i) + 1);
+  else if (act === 'dec') setQty(i, getQty(i) - 1);
+  else if (act === 'addq') setQty(i, getQty(i) + +b.getAttribute('data-v'));   // 누른 만큼 더함
+  else if (act === 'subq') setQty(i, getQty(i) - +b.getAttribute('data-v'));   // 누른 만큼 뺌 (0 아래로는 내려가지 않음)
+  else if (act === 'sellall'){ if (S.hold[i] > 0){ setQty(i, S.hold[i]); trade(i, -1); } }   // 보유 수량 전부 팔기
+  else if (act === 'damt') setAmt(b.getAttribute('data-k'), getAmt(b.getAttribute('data-k')) + +b.getAttribute('data-v'));
+  else if (act === 'depjoin') finJoin('dep');
+  else if (act === 'savjoin') finJoin('sav');
+  else if (act === 'depcancel') finCancel('dep');
+  else if (act === 'savcancel') finCancel('sav');
+  else if (act === 'savpay'){ if (S.stage === 'trade' && remainMs() > 0){ const m = payInstallment(false); if (m){ persist(); render(); toast(m); } } }
+  else if (act === 'start') startYear();
+  else if (act === 'tab'){ ui.tab = b.getAttribute('data-t'); if (ui.tab === 'result' && !ui.resultYear) ui.resultYear = S.closed.length; render(); }
+  else if (act === 'ryear'){ ui.resultYear = +b.getAttribute('data-y'); render(); }
+  else if (act === 'next'){ ui.tab = 'trade'; ui.qty = {}; ui.amt = {}; render(); window.scrollTo({ top:0 }); }
+  else if (act === 'home'){ S = null; ui.err = ''; ui.startName = ''; ui.startMode = ''; render(); }
+  else if (act === 'resume'){
+    const k = b.getAttribute('data-key'); try { const s = JSON.parse(store.get(k)); S = loadGame(s.mode, s.name); normalizeStage(); ui.tab = S.stage === 'done' ? 'result' : 'trade'; ui.qty = {}; ui.resultYear = null; render(); } catch(err){}
+  }
+  else if (act === 'delsave'){
+    const k = b.getAttribute('data-key');
+    if (await confirmBox('이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.', '삭제하기')){ store.del(k); render(); }
+  }
+  else if (act === 'copy'){
+    const y = +b.getAttribute('data-y'), c = S.closed[y - 1];
+    const code = hash53([S.mode, S.name, y, c.total, S.flagged ? 1 : 0].join('|') + SIG_SALT).slice(0, 5).toUpperCase();
+    const text = '[' + MODE_LABEL[S.mode] + '] ' + S.name + ' / ' + y + '년차 총자산 ' + fmt(c.total) + ' (시작 자금 대비 ' + pct(c.cum) + ') / 확인 번호 ' + code;
+    copyText(text).then(() => toast('결과를 복사했어요.')).catch(() => toast('복사하지 못했어요. 화면을 캡처해서 제출하세요.'));
+  }
+});
+
+render();
+})();
+</script>
+</body>
+</html>
